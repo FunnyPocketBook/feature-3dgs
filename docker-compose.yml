@@ -1,10 +1,10 @@
 services:
   feature-3dgs:
-    container_name: feature_3dgs_test
-    image: feature_3dgs:test
+    container_name: feature_3dgs
+    image: gitlab-int.nlr.nl:5050/dang/feature-3dgs
     build:
       context: .
-      dockerfile: Dockerfile3
+      dockerfile: Dockerfile
     tty: true
     ports:
       - 6009:6009
