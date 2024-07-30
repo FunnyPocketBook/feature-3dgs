@@ -54,20 +54,21 @@ FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && apt install -y tzdata vim
+RUN apt update && apt install -y tzdata vim x11-apps xauth
 
 COPY --from=builder /opt/conda /opt/conda
 COPY --from=builder /usr/bin /usr/bin
 COPY --from=builder /usr/lib /usr/lib
 COPY --from=builder /usr/include /usr/include
 COPY --from=builder /usr/share /usr/share
+COPY --from=builder /workspace/feature-3dgs/src/SIBR_viewers   /workspace/SIBR_viewers 
 
 WORKDIR /workspace/feature-3dgs
 
 RUN /opt/conda/bin/conda init
 ENV PATH="/opt/conda/bin:$PATH"
-SHELL ["conda", "run", "-n", "feature_3dgs", "/bin/bash", "-c"]
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
+CMD [ "bash" ]

@@ -24,7 +24,7 @@ RUN apt install -y git && \
 
 # Create a workspace directory and clone the repository
 WORKDIR /workspace
-RUN git clone https://github.com/ShijieZhou-UCLA/feature-3dgs.git --recursive
+RUN git clone https://gitlab-int.nlr.nl/dang/feature-3dgs.git --recursive
 
 # Create a Conda environment and activate it
 WORKDIR /workspace/feature-3dgs
@@ -52,7 +52,7 @@ RUN sed -i 's/find_package(embree 3\.0 )/find_package(EMBREE)/g' dependencies.cm
 RUN mv /workspace/feature-3dgs/SIBR_viewers/cmake/linux/Modules/FindEmbree.cmake /workspace/feature-3dgs/SIBR_viewers/cmake/linux/Modules/FindEMBREE.cmake
 
 # Fix the naming of the embree library in the rayscaster's cmake
-RUN sed -i 's/\bembree\b/embree3/g' /workspace/feature-3dgs/SIBR_viewers/src/core/raycaster/CMakeLists.txt
+# RUN sed -i 's/\bembree\b/embree3/g' /workspace/feature-3dgs/SIBR_viewers/src/core/raycaster/CMakeLists.txt
 
 # Ready to build the viewer now.
 WORKDIR /workspace/feature-3dgs/SIBR_viewers 

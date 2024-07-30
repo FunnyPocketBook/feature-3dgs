@@ -1,22 +1,28 @@
 services:
   feature-3dgs:
     container_name: feature_3dgs
-    image: feature_3dgs:v0.1
+    image: feature_3dgs:dev
     build:
       context: .
       dockerfile: Dockerfile_stage
-    entrypoint: ["/entrypoint.sh", "bash"]
     tty: true
+    ports:
+      - 6009:6009
     volumes:
       - /home/dang/git/feature-3dgs/src:/workspace/feature-3dgs
       - /home/dang/data:/workspace/data
       - /home/dang/checkpoints/sam:/workspace/feature-3dgs/encoders/sam_encoder/checkpoints
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ~/.Xauthority:/root/.Xauthority:rw
+    environment:
+      - DISPLAY=$DISPLAY
     deploy:
       resources:
         limits:
-          cpus: 1
+          memory: 12G
         reservations:
           devices:
             - driver: nvidia
+              device_ids: ["0"]
               capabilities: [gpu]
 
