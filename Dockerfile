@@ -1,78 +1,88 @@
-## Unofficial Dockerfile for 3D Gaussian Splatting for Real-Time Radiance Field Rendering
-## Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis
-## https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/
-
-# First stage: Setup and build
 FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install tzdata separately
-RUN apt update && apt install -y tzdata 
+# Install packages necessary for SIBR viewer (and some other general packages)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    libglew-dev \
+    libassimp-dev \
+    libboost-all-dev \
+    libgtk-3-dev \
+    libopencv-dev \
+    libglfw3-dev \
+    libavdevice-dev \
+    libavcodec-dev \
+    libeigen3-dev \
+    libxxf86vm-dev \
+    libembree-dev \
+    wget \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install necessary packages
-RUN apt install -y git \
-    libglew-dev libassimp-dev libboost-all-dev libgtk-3-dev libopencv-dev libglfw3-dev \
-    libavdevice-dev libavcodec-dev libeigen3-dev libxxf86vm-dev libembree-dev \
-    && apt clean && apt install -y wget && rm -rf /var/lib/apt/lists/*
-
-# Create a workspace directory and clone the repository
 WORKDIR /workspace
 RUN git clone https://gitlab-int.nlr.nl/dang/feature-3dgs.git --recursive
 
-# Create a Conda environment
 WORKDIR /workspace/feature-3dgs/src
 
-RUN /opt/conda/bin/conda init
 ENV PATH="/opt/conda/bin:$PATH"
 ENV TORCH_CUDA_ARCH_LIST="3.5;5.0;6.0;6.1;7.0;7.5;8.0;8.6+PTX"
 
-RUN conda env create --file environment.yml
+# Install packages needed for 2D foundation models
+RUN conda env create --file environment.yml \
+    && conda run -n feature_3dgs pip install -r encoders/lseg_encoder/requirements.txt \
+    && conda run -n feature_3dgs pip install -e encoders/sam_encoder \
+    && conda run -n feature_3dgs pip install opencv-python pycocotools matplotlib onnxruntime onnx
 
-SHELL ["conda", "run", "-n", "feature_3dgs", "/bin/bash", "-c"]
-
-RUN pip install -r encoders/lseg_encoder/requirements.txt \
-    && pip install -e encoders/sam_encoder \
-    && pip install opencv-python pycocotools matplotlib onnxruntime onnx
-
-# Tweak the CMake file for matching the existing OpenCV version. Fix the naming of FindEmbree.cmake
+# Compile SIBR viewers from source. Doesn't use the one from Feature 3DGS, since the required binaries are missing there.
 WORKDIR /workspace
 RUN git clone https://github.com/RongLiu-Leo/Gaussian-Splatting-Monitor.git
-WORKDIR /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux
-RUN sed -i 's/find_package(OpenCV 4\.5 REQUIRED)/find_package(OpenCV 4.2 REQUIRED)/g' dependencies.cmake \
-    && sed -i 's/find_package(embree 3\.0 )/find_package(EMBREE)/g' dependencies.cmake \
-    && mv /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux/Modules/FindEmbree.cmake /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux/Modules/FindEMBREE.cmake
 
-# Fix the naming of the embree library in the rayscaster's cmake
-RUN sed -i 's/\bembree\b/embree3/g' /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/src/core/raycaster/CMakeLists.txt
+# Replace requirements with compatible ones
+RUN sed -i 's/find_package(OpenCV 4\.5 REQUIRED)/find_package(OpenCV 4.2 REQUIRED)/g; s/find_package(embree 3\.0 )/find_package(EMBREE)/g' /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux/dependencies.cmake \
+    && mv /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux/Modules/FindEmbree.cmake /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux/Modules/FindEMBREE.cmake \
+    && sed -i 's/\bembree\b/embree3/g' /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/src/core/raycaster/CMakeLists.txt
 
-# Ready to build the viewer now.
 WORKDIR /workspace/Gaussian-Splatting-Monitor/SIBR_viewers 
 RUN cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build -j24 --target install
+    && cmake --build build -j$(nproc) --target install
 
 # Second stage
 FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && apt install -y tzdata vim x11-apps xauth
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tzdata \
+    vim \
+    x11-apps \
+    xauth \
+    libglew-dev \
+    libassimp-dev \
+    libboost-all-dev \
+    libgtk-3-dev \
+    libopencv-dev \
+    libglfw3-dev \
+    libavdevice-dev \
+    libavcodec-dev \
+    libeigen3-dev \
+    libxxf86vm-dev \
+    libembree-dev \
+    software-properties-common \
+    && add-apt-repository ppa:kisak/kisak-mesa \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/conda /opt/conda
-COPY --from=builder /usr/bin /usr/bin
-COPY --from=builder /usr/lib /usr/lib
-COPY --from=builder /usr/include /usr/include
-COPY --from=builder /usr/share /usr/share
-COPY --from=builder /workspace/Gaussian-Splatting-Monitor/SIBR_viewers   /workspace/SIBR_viewers 
+COPY --from=builder /workspace/Gaussian-Splatting-Monitor/SIBR_viewers /workspace/SIBR_viewers 
+
 WORKDIR /workspace/feature-3dgs
 
-RUN apt install -y libglew-dev libassimp-dev libboost-all-dev libgtk-3-dev libopencv-dev libglfw3-dev libavdevice-dev libavcodec-dev libeigen3-dev libxxf86vm-dev libembree-dev
-RUN apt install -y software-properties-common && add-apt-repository ppa:kisak/kisak-mesa -y && apt update && apt -y upgrade
-
-RUN /opt/conda/bin/conda init
 ENV PATH="/opt/conda/bin:$PATH"
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
-CMD [ "bash" ]
+CMD ["bash"]
