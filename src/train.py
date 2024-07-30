@@ -170,7 +170,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     }
                     # Send the data
                     network_gui.send(net_image_bytes, dataset.source_path, metrics_dict)
-                    print("sending data")
                     if do_training and ((iteration < int(opt.iterations)) or not keep_alive):
                         break
                 except Exception as e:
