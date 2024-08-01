@@ -27,20 +27,17 @@ RUN pip install -r encoders/lseg_encoder/requirements.txt && \
     pip install opencv-python pycocotools matplotlib onnxruntime onnx && \
     pip install git+https://github.com/nerfstudio-project/gsplat.git@v0.1.10
 
-# Tweak the CMake file for matching the existing OpenCV version and fixing FindEmbree.cmake
 WORKDIR /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux
 RUN sed -i 's/find_package(OpenCV 4\.5 REQUIRED)/find_package(OpenCV 4.2 REQUIRED)/g' dependencies.cmake && \
     sed -i 's/find_package(embree 3\.0 )/find_package(EMBREE)/g' dependencies.cmake && \
     mv Modules/FindEmbree.cmake Modules/FindEMBREE.cmake
 
-# Fix the naming of the embree library in the raycaster's cmake
 RUN sed -i 's/\bembree\b/embree3/g' ../../src/core/raycaster/CMakeLists.txt
 
 WORKDIR /workspace/Gaussian-Splatting-Monitor/SIBR_viewers
 RUN cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build -j$(nproc) --target install
 
-# Second stage: Final image
 FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -48,8 +45,7 @@ ENV PATH="/opt/miniforge3/bin:$PATH"
 ENV PATH="/workspace/SIBR_viewers/install/bin:$PATH"
 
 RUN apt update && \
-    apt install -y --no-install-recommends tzdata vim x11-apps xauth colmap imagemagick \
-    libglew-dev libassimp-dev libboost-all-dev \
+    apt install -y --no-install-recommends tzdata vim x11-apps xauth libglew-dev libassimp-dev libboost-all-dev \
     libgtk-3-dev libopencv-dev libglfw3-dev libavdevice-dev libavcodec-dev libeigen3-dev \
     libxxf86vm-dev libembree-dev software-properties-common && \
     add-apt-repository ppa:kisak/kisak-mesa -y && \
