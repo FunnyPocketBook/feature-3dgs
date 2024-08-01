@@ -25,7 +25,8 @@ SHELL ["conda", "run", "-n", "feature_3dgs", "/bin/bash", "-c"]
 RUN pip install -r encoders/lseg_encoder/requirements.txt && \
     pip install -e encoders/sam_encoder && \
     pip install opencv-python pycocotools matplotlib onnxruntime onnx && \
-    pip install git+https://github.com/nerfstudio-project/gsplat.git@v0.1.10
+    pip install git+https://github.com/nerfstudio-project/gsplat.git@v0.1.10 && \
+    pip install git+https://github.com/zhanghang1989/PyTorch-Encoding/
 
 WORKDIR /workspace/Gaussian-Splatting-Monitor/SIBR_viewers/cmake/linux
 RUN sed -i 's/find_package(OpenCV 4\.5 REQUIRED)/find_package(OpenCV 4.2 REQUIRED)/g' dependencies.cmake && \
