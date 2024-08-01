@@ -1,7 +1,7 @@
 services:
   feature-3dgs:
     container_name: feature_3dgs
-    image: gitlab-int.nlr.nl:5050/dang/feature-3dgs
+    image: feature-3dgs:0.08.01
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,7 +11,9 @@ services:
     volumes:
       - /home/dang/git/feature-3dgs/src:/workspace/feature-3dgs
       - /home/dang/data:/workspace/data
+      - /home/dang/output:/workspace/output
       - /home/dang/checkpoints/sam:/workspace/feature-3dgs/encoders/sam_encoder/checkpoints
+      - /home/dang/checkpoints/lseg:/workspace/lseg
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ~/.Xauthority:/root/.Xauthority:rw
     environment:
