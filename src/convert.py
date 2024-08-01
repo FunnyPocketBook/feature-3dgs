@@ -10,9 +10,11 @@
 #
 
 import os
+import sys
 import logging
 from argparse import ArgumentParser
 import shutil
+import subprocess
 
 # This Python script is based on the shell converter script provided in the MipNerF 360 repository.
 parser = ArgumentParser("Colmap converter")
@@ -38,7 +40,9 @@ if not args.skip_matching:
         --ImageReader.single_camera 1 \
         --ImageReader.camera_model " + args.camera + " \
         --SiftExtraction.use_gpu " + str(use_gpu)
-    exit_code = os.system(feat_extracton_cmd)
+    # exit_code = os.system(feat_extracton_cmd)
+    result = subprocess.run(feat_extracton_cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+    exit_code = result.returncode
     if exit_code != 0:
         logging.error(f"Feature extraction failed with code {exit_code}. Exiting.")
         exit(exit_code)
@@ -47,7 +51,9 @@ if not args.skip_matching:
     feat_matching_cmd = colmap_command + " exhaustive_matcher \
         --database_path " + args.source_path + "/distorted/database.db \
         --SiftMatching.use_gpu " + str(use_gpu)
-    exit_code = os.system(feat_matching_cmd)
+    # exit_code = os.system(feat_matching_cmd)
+    result = subprocess.run(feat_matching_cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+    exit_code = result.returncode
     if exit_code != 0:
         logging.error(f"Feature matching failed with code {exit_code}. Exiting.")
         exit(exit_code)
@@ -60,7 +66,9 @@ if not args.skip_matching:
         --image_path "  + args.source_path + "/input \
         --output_path "  + args.source_path + "/distorted/sparse \
         --Mapper.ba_global_function_tolerance=0.000001")
-    exit_code = os.system(mapper_cmd)
+    # exit_code = os.system(mapper_cmd)
+    result = subprocess.run(mapper_cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+    exit_code = result.returncode
     if exit_code != 0:
         logging.error(f"Mapper failed with code {exit_code}. Exiting.")
         exit(exit_code)
@@ -72,7 +80,9 @@ img_undist_cmd = (colmap_command + " image_undistorter \
     --input_path " + args.source_path + "/distorted/sparse/0 \
     --output_path " + args.source_path + "\
     --output_type COLMAP")
-exit_code = os.system(img_undist_cmd)
+# exit_code = os.system(img_undist_cmd)
+result = subprocess.run(img_undist_cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+exit_code = result.returncode
 if exit_code != 0:
     logging.error(f"Mapper failed with code {exit_code}. Exiting.")
     exit(exit_code)
@@ -102,21 +112,27 @@ if(args.resize):
 
         destination_file = os.path.join(args.source_path, "images_2", file)
         shutil.copy2(source_file, destination_file)
-        exit_code = os.system(magick_command + " mogrify -resize 50% " + destination_file)
+        # exit_code = os.system(magick_command + " mogrify -resize 50% " + destination_file)
+        result = subprocess.run(magick_command + " mogrify -resize 50% " + destination_file, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+        exit_code = result.returncode
         if exit_code != 0:
             logging.error(f"50% resize failed with code {exit_code}. Exiting.")
             exit(exit_code)
 
         destination_file = os.path.join(args.source_path, "images_4", file)
         shutil.copy2(source_file, destination_file)
-        exit_code = os.system(magick_command + " mogrify -resize 25% " + destination_file)
+        # exit_code = os.system(magick_command + " mogrify -resize 25% " + destination_file)
+        result = subprocess.run(magick_command + " mogrify -resize 25% " + destination_file, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+        exit_code = result.returncode
         if exit_code != 0:
             logging.error(f"25% resize failed with code {exit_code}. Exiting.")
             exit(exit_code)
 
         destination_file = os.path.join(args.source_path, "images_8", file)
         shutil.copy2(source_file, destination_file)
-        exit_code = os.system(magick_command + " mogrify -resize 12.5% " + destination_file)
+        # exit_code = os.system(magick_command + " mogrify -resize 12.5% " + destination_file)
+        result = subprocess.run(magick_command + " mogrify -resize 12.5% " + destination_file, shell=True, stdout=sys.stdout, stderr=sys.stderr, text=True)
+        exit_code = result.returncode
         if exit_code != 0:
             logging.error(f"12.5% resize failed with code {exit_code}. Exiting.")
             exit(exit_code)
