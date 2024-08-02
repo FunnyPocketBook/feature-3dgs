@@ -9,5 +9,4 @@ tensorboard_3d
 screenshots
 *.ckpt
 *.pth
-data
 data_scannet
